@@ -1,0 +1,47 @@
+{
+  "sports": [
+    { "id": "ferrari-f8-tributo", "name": "Ferrari F8 Tributo", "brand": "Ferrari", "price": 280000, "topSpeed": 211, "acceleration": 2.9, "handling": 97, "rarity": "legendary", "category": "sports" },
+    { "id": "lamborghini-aventador-svj", "name": "Lamborghini Aventador SVJ", "brand": "Lamborghini", "price": 517000, "topSpeed": 217, "acceleration": 2.8, "handling": 96, "rarity": "mythic", "category": "sports" },
+    { "id": "porsche-911-gt3-rs", "name": "Porsche 911 GT3 RS", "brand": "Porsche", "price": 241000, "topSpeed": 184, "acceleration": 3.0, "handling": 98, "rarity": "epic", "category": "sports" },
+    { "id": "nissan-370z-nismo", "name": "Nissan 370Z NISMO", "brand": "Nissan", "price": 46000, "topSpeed": 155, "acceleration": 5.0, "handling": 84, "rarity": "rare", "category": "sports" }
+  ],
+  "luxury": [
+    { "id": "mercedes-maybach-s680", "name": "Mercedes-Maybach S680", "brand": "Mercedes-Maybach", "price": 230000, "topSpeed": 155, "acceleration": 4.4, "handling": 78, "rarity": "legendary", "category": "luxury" },
+    { "id": "bentley-flying-spur", "name": "Bentley Flying Spur", "brand": "Bentley", "price": 210000, "topSpeed": 207, "acceleration": 3.7, "handling": 84, "rarity": "legendary", "category": "luxury" },
+    { "id": "lexus-ls500", "name": "Lexus LS 500", "brand": "Lexus", "price": 80000, "topSpeed": 136, "acceleration": 4.6, "handling": 80, "rarity": "rare", "category": "luxury" }
+  ],
+  "supercars": [
+    { "id": "mclaren-p1", "name": "McLaren P1", "brand": "McLaren", "price": 1350000, "topSpeed": 217, "acceleration": 2.7, "handling": 100, "rarity": "mythic", "category": "supercars" },
+    { "id": "pagani-huayra", "name": "Pagani Huayra", "brand": "Pagani", "price": 2400000, "topSpeed": 238, "acceleration": 2.8, "handling": 99, "rarity": "mythic", "category": "supercars" },
+    { "id": "ferrari-sf90", "name": "Ferrari SF90 Stradale", "brand": "Ferrari", "price": 625000, "topSpeed": 211, "acceleration": 2.0, "handling": 98, "rarity": "legendary", "category": "supercars" }
+  ],
+  "normal": [
+    { "id": "mazda-mx5-nd", "name": "Mazda MX-5 Miata (ND)", "brand": "Mazda", "price": 30000, "topSpeed": 135, "acceleration": 6.1, "handling": 87, "rarity": "common", "category": "normal" },
+    { "id": "toyota-corolla-gr", "name": "Toyota GR Corolla", "brand": "Toyota", "price": 36000, "topSpeed": 143, "acceleration": 4.9, "handling": 86, "rarity": "rare", "category": "normal" },
+    { "id": "honda-civic-si", "name": "Honda Civic Si", "brand": "Honda", "price": 29000, "topSpeed": 137, "acceleration": 6.8, "handling": 80, "rarity": "common", "category": "normal" }
+  ],
+  "electric": [
+    { "id": "tesla-model-s-plaid", "name": "Tesla Model S Plaid", "brand": "Tesla", "price": 135000, "topSpeed": 200, "acceleration": 1.99, "handling": 90, "rarity": "legendary", "category": "electric" },
+    { "id": "rimac-nevera", "name": "Rimac Nevera", "brand": "Rimac", "price": 2200000, "topSpeed": 258, "acceleration": 1.85, "handling": 100, "rarity": "mythic", "category": "electric" },
+    { "id": "lucid-air-sapphire", "name": "Lucid Air Sapphire", "brand": "Lucid", "price": 249000, "topSpeed": 205, "acceleration": 1.89, "handling": 96, "rarity": "legendary", "category": "electric" }
+  ],
+  "offroad": [
+    { "id": "jeep-wrangler-rubicon-392", "name": "Jeep Wrangler Rubicon 392", "brand": "Jeep", "price": 87500, "topSpeed": 112, "acceleration": 4.5, "handling": 74, "rarity": "rare", "category": "offroad" },
+    { "id": "toyota-land-cruiser-300", "name": "Toyota Land Cruiser 300", "brand": "Toyota", "price": 85000, "topSpeed": 130, "acceleration": 6.7, "handling": 76, "rarity": "rare", "category": "offroad" }
+  ],
+  "rally": [
+    { "id": "audi-quattro-s1", "name": "Audi Sport Quattro S1", "brand": "Audi", "price": 500000, "topSpeed": 140, "acceleration": 3.1, "handling": 94, "rarity": "mythic", "category": "rally" },
+    { "id": "subaru-impreza-22b", "name": "Subaru Impreza 22B", "brand": "Subaru", "price": 160000, "topSpeed": 155, "acceleration": 4.5, "handling": 92, "rarity": "legendary", "category": "rally" }
+  ],
+  "classics": [
+    { "id": "jaguar-e-type", "name": "Jaguar E-Type", "brand": "Jaguar", "price": 200000, "topSpeed": 150, "acceleration": 7.0, "handling": 82, "rarity": "legendary", "category": "classics" },
+    { "id": "porsche-959", "name": "Porsche 959", "brand": "Porsche", "price": 1500000, "topSpeed": 197, "acceleration": 3.7, "handling": 90, "rarity": "mythic", "category": "classics" }
+  ],
+  "water": [
+    { "id": "amphi-x1", "name": "Amphi X1", "brand": "AquaTech", "price": 220000, "topSpeed": 80, "acceleration": 5.5, "handling": 70, "rarity": "epic", "category": "water" }
+  ],
+  "air": [
+    { "id": "aero-glider", "name": "Aero Glider", "brand": "AeroDrive", "price": 650000, "topSpeed": 240, "acceleration": 2.6, "handling": 85, "rarity": "legendary", "category": "air" }
+  ]
+}
+
