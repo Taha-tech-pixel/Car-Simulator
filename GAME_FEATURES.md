@@ -2,6 +2,24 @@
 
 ## 🚗 **COMPLETED FEATURES**
 
+## 🚀 **NEW FEATURES (Latest)**
+- **Account System**: Register/login with basic profiles (demo in-memory)
+- **Car Skins**: Preset skins (Factory, Stealth, Neon Pulse, Gold, Crimson) with live preview
+- **Elemental Cars**: Fire/Water/Earth/Air emissive effects
+- **Combat Add‑ons**: Spikes, guns, bomb placeholder attachments
+- **Tournaments**: Create, join, start, auto‑bracket, final rewards & arena hook
+- **Rewards & Arenas**: Winner auto‑credited; arena selection ready
+- **Fuel & Charge**: Petrol pumps and EV chargers with costs and capacity
+- **Report System**: In‑game player reporting (socket & REST ack)
+- **Server Hopping**: Server directory endpoint to switch servers
+- **Controls Settings**: Remap WASD in settings panel; saved locally
+- **Builder Parts Table**: After finalize, see a table with part sizes and previews
+- **Perspective Modes**: 1st, 2nd, 3rd person (hotkeys 1/2/3)
+- **UI/World Animations**: Panel fade‑in, notification pop/fade, neon skin pulse
+- **Developer Console (Private)**: Ctrl+Alt+D panel secured by `ADMIN_SECRET`
+  - Commands: `giveMoney`, `spawnCar`, `ban`, `freeze`, `unfreeze`
+  - Server returns private admin logs to your console panel
+
 ### ✅ **Core Game Systems**
 - **3D Graphics Engine**: Three.js with WebGL rendering
 - **Realistic Car Models**: 15+ different car models across 4 categories

@@ -306,7 +306,7 @@ export class PhysicsEngine {
         
         for (const [id, body] of this.bodies) {
             // Velocity vector
-            const velocityGeometry = new THREE.ArrowGeometry(0.1, 0.5);
+            const velocityGeometry = new THREE.ConeGeometry(0.1, 0.5, 6);
             const velocityMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
             const velocityArrow = new THREE.Mesh(velocityGeometry, velocityMaterial);
             velocityArrow.position.copy(body.position);

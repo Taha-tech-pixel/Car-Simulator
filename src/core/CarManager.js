@@ -9,6 +9,7 @@ export class CarManager {
         this.loader = new GLTFLoader();
         this.carDatabase = this.initializeCarDatabase();
         this.externalPacks = [];
+        this.skinPresets = this.initializeSkinPresets();
         
         this.loadCarModels();
     }
@@ -632,6 +633,16 @@ export class CarManager {
         console.log('Car models loaded successfully!');
     }
 
+    initializeSkinPresets() {
+        return {
+            default: { label: 'Factory', material: { color: 0x808080, metalness: 0.7, roughness: 0.3 } },
+            stealth: { label: 'Stealth Matte', material: { color: 0x111111, metalness: 0.2, roughness: 0.9 } },
+            neon: { label: 'Neon Pulse', material: { color: 0x00ffff, metalness: 0.9, roughness: 0.2, emissive: 0x00ffff, emissiveIntensity: 0.2 } },
+            gold: { label: 'Gold Chrome', material: { color: 0xffd700, metalness: 1.0, roughness: 0.05 } },
+            crimson: { label: 'Crimson', material: { color: 0xcc1122, metalness: 0.8, roughness: 0.25 } }
+        };
+    }
+
     createPlaceholderModel(carData) {
         const car = new THREE.Group();
         
@@ -838,6 +849,57 @@ export class CarManager {
         const car = this.cars.get(instanceId);
         if (!car) return false;
         
+        // Elemental effects (simple emissive tint)
+        if (customization.element) {
+            const elementColor = {
+                fire: 0xff4500,
+                water: 0x00bcd4,
+                earth: 0x8d6e63,
+                air: 0x90caf9
+            }[customization.element] || 0xffffff;
+            car.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    child.material.emissive = new THREE.Color(elementColor);
+                    child.material.emissiveIntensity = 0.1;
+                }
+            });
+            car.userData.element = customization.element;
+        }
+
+        // Combat attachments (placeholder geometry)
+        if (customization.attachments) {
+            const { spikes, guns, bombs } = customization.attachments;
+            if (spikes) {
+                const spike = new THREE.ConeGeometry(0.1, 0.5, 6);
+                const mat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.9, roughness: 0.2 });
+                for (let i = -1; i <= 1; i++) {
+                    const m = new THREE.Mesh(spike, mat);
+                    m.position.set(2.1, -0.2, i * 0.6);
+                    m.rotation.z = Math.PI / 2;
+                    m.castShadow = true;
+                    car.add(m);
+                }
+            }
+            if (guns) {
+                const barrel = new THREE.CylinderGeometry(0.05, 0.05, 0.6, 8);
+                const mat = new THREE.MeshStandardMaterial({ color: 0x444444 });
+                const left = new THREE.Mesh(barrel, mat);
+                left.position.set(1.6, 0.2, 0.5);
+                left.rotation.z = Math.PI / 2;
+                const right = left.clone();
+                right.position.z = -0.5;
+                car.add(left);
+                car.add(right);
+            }
+            if (bombs) {
+                const sphere = new THREE.SphereGeometry(0.2, 12, 10);
+                const mat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+                const bomb = new THREE.Mesh(sphere, mat);
+                bomb.position.set(-1.8, -0.2, 0);
+                car.add(bomb);
+            }
+        }
+
         // Apply color changes
         if (customization.color) {
             car.traverse((child) => {
@@ -848,6 +910,22 @@ export class CarManager {
                 }
             });
         }
+        // Apply skin preset
+        if (customization.skinId && this.skinPresets[customization.skinId]) {
+            const preset = this.skinPresets[customization.skinId];
+            const materialProps = preset.material || {};
+            car.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    if (materialProps.color !== undefined && child.material.color) child.material.color.setHex(materialProps.color);
+                    if (materialProps.metalness !== undefined) child.material.metalness = materialProps.metalness;
+                    if (materialProps.roughness !== undefined) child.material.roughness = materialProps.roughness;
+                    if (materialProps.emissive !== undefined) child.material.emissive = new THREE.Color(materialProps.emissive);
+                    if (materialProps.emissiveIntensity !== undefined) child.material.emissiveIntensity = materialProps.emissiveIntensity;
+                    child.material.needsUpdate = true;
+                }
+            });
+            car.userData.activeSkinId = customization.skinId;
+        }
         
         // Apply other customizations
         car.userData.customization = {
@@ -856,6 +934,10 @@ export class CarManager {
         };
         
         return true;
+    }
+
+    applySkinToCar(instanceId, skinId) {
+        return this.customizeCar(instanceId, { skinId });
     }
 
     // Car performance calculations
@@ -914,6 +996,17 @@ export class CarManager {
                 car.children.forEach(child => {
                     if (child.geometry && child.geometry.type === 'CylinderGeometry') {
                         child.rotation.x += deltaTime * 10;
+                    }
+                });
+            }
+
+            // Neon skin emissive pulse animation
+            if (car.userData.activeSkinId === 'neon') {
+                const t = Date.now() * 0.003;
+                const pulse = 0.15 + 0.1 * (1 + Math.sin(t));
+                car.traverse((child) => {
+                    if (child.isMesh && child.material && child.material.emissive) {
+                        child.material.emissiveIntensity = pulse;
                     }
                 });
             }

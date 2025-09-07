@@ -35,6 +35,9 @@ import { TuningManager } from './core/TuningManager.js';
 import { EventsManager } from './core/EventsManager.js';
 import { TelemetryManager } from './core/TelemetryManager.js';
 import { DriftManager } from './core/DriftManager.js';
+import { DevToolsManager } from './core/DevToolsManager.js';
+import { CityShowroomManager } from './core/CityShowroomManager.js';
+import { CityEventsManager } from './core/CityEventsManager.js';
 
 class CarGame {
     constructor() {
@@ -99,6 +102,9 @@ class CarGame {
             this.eventsManager = new EventsManager();
             this.telemetryManager = new TelemetryManager();
             this.driftManager = new DriftManager();
+            this.devToolsManager = new DevToolsManager();
+            this.cityShowroomManager = new CityShowroomManager();
+            this.cityEventsManager = new CityEventsManager();
             
             // Load game assets
             await this.loadAssets();
@@ -123,6 +129,12 @@ class CarGame {
             // Attach telemetry HUD
             const hud = document.getElementById('telemetryHUD');
             if (hud) this.telemetryManager.attach(hud);
+            
+            // Start city events system
+            this.cityEventsManager.start();
+            
+            // Load settings
+            this.settingsManager.loadSettings();
             
             // Start game loop
             this.startGameLoop();
@@ -582,6 +594,137 @@ class CarGame {
             const betId = this.bettingManager.createBet({ carId, owner: player.id });
             this.uiManager.showNotification(`Bet created (${betId})`);
         });
+
+        // Dev Tools Events
+        window.addEventListener('dev-tools:teleport', (e) => {
+            const { type, destination, x, y, z } = e.detail;
+            if (type === 'city') {
+                this.mapManager.teleportToCity(destination);
+                this.uiManager.showNotification(`Teleported to ${destination}`);
+            } else if (type === 'coordinates') {
+                this.camera.position.set(x, y, z);
+                this.controls.target.set(x, y, z);
+                this.controls.update();
+                this.uiManager.showNotification(`Teleported to (${x}, ${y}, ${z})`);
+            }
+        });
+
+        window.addEventListener('dev-tools:unlock-city', (e) => {
+            const { cityName } = e.detail;
+            this.mapManager.unlockCity(cityName);
+            this.cityShowroomManager.unlockShowroom(cityName);
+            this.uiManager.showNotification(`Unlocked ${cityName}!`);
+        });
+
+        window.addEventListener('dev-tools:give-money', (e) => {
+            const { amount } = e.detail;
+            const player = this.singleplayerManager.playerProfile;
+            player.money += amount;
+            this.updatePlayerUI();
+            this.uiManager.showNotification(`Gave $${amount.toLocaleString()}`);
+        });
+
+        window.addEventListener('dev-tools:give-car', (e) => {
+            const { carId } = e.detail;
+            const player = this.singleplayerManager.playerProfile;
+            const carData = this.carManager.getCarData(carId);
+            if (carData) {
+                player.cars.push({ id: carData.id, name: carData.name });
+                this.updatePlayerUI();
+                this.uiManager.showNotification(`Gave ${carData.name}`);
+            }
+        });
+
+        window.addEventListener('dev-tools:level-up', (e) => {
+            const { type, amount } = e.detail;
+            this.settingsManager.increaseLevel(type, amount);
+            this.uiManager.showNotification(`Increased ${type} level by ${amount}`);
+        });
+
+        // City Events
+        window.addEventListener('city-event:started', (e) => {
+            const { event } = e.detail;
+            this.uiManager.showNotification(`🌍 ${event.name} has started!`, 'info');
+        });
+
+        window.addEventListener('city-event:ended', (e) => {
+            const { event } = e.detail;
+            this.uiManager.showNotification(`🌍 ${event.name} has ended!`, 'info');
+        });
+
+        window.addEventListener('city-event:rewards', (e) => {
+            const { rewards } = e.detail;
+            rewards.forEach(reward => {
+                if (reward.type === 'city_unlock') {
+                    this.mapManager.unlockCity(reward.value);
+                    this.cityShowroomManager.unlockShowroom(reward.value);
+                    this.uiManager.showNotification(`🏙️ Unlocked ${reward.value}!`);
+                } else {
+                    this.uiManager.showNotification(`🎁 Received ${reward.type}!`);
+                }
+            });
+        });
+
+        // Showroom Events
+        window.addEventListener('showroom:unlocked', (e) => {
+            const { showroom } = e.detail;
+            this.uiManager.showNotification(`🏪 ${showroom.name} is now available!`);
+        });
+
+        window.addEventListener('showroom:enter', (e) => {
+            const { showroom } = e.detail;
+            this.uiManager.showNotification(`Welcome to ${showroom.name}!`);
+        });
+
+        // Achievement Events
+        window.addEventListener('achievement-unlocked', (e) => {
+            const { title, description, icon } = e.detail;
+            this.uiManager.showNotification(`🏆 Achievement: ${title}`, 'success');
+        });
+
+        // Level Up Events
+        window.addEventListener('level-updated', (e) => {
+            const { type, level } = e.detail;
+            this.uiManager.showNotification(`📈 ${type} level increased to ${level}!`);
+        });
+
+        // City Feature Events
+        window.addEventListener('city:teleport-to-feature', (e) => {
+            const { city, feature, position, name } = e.detail;
+            this.camera.position.set(position.x, position.y, position.z);
+            this.controls.target.set(position.x, position.y, position.z);
+            this.controls.update();
+            this.uiManager.showNotification(`🏙️ Teleported to ${name} in ${city}`);
+        });
+
+        window.addEventListener('dev-tools:city-features', (e) => {
+            const { cityName } = e.detail;
+            const features = this.mapManager.getAvailableFeatures(cityName);
+            if (features.length > 0) {
+                const featureList = features.map(f => `- ${f.name} (${f.type})`).join('\n');
+                this.uiManager.showNotification(`🏙️ ${cityName} features:\n${featureList}`);
+            } else {
+                this.uiManager.showNotification(`🏙️ No features available in ${cityName} (city may be locked)`);
+            }
+        });
+
+        window.addEventListener('dev-tools:teleport-to-feature', (e) => {
+            const { cityName, featureType } = e.detail;
+            const result = this.mapManager.teleportToFeature(cityName, featureType);
+            if (result.success) {
+                this.camera.position.set(result.position.x, result.position.y, result.position.z);
+                this.controls.target.set(result.position.x, result.position.y, result.position.z);
+                this.controls.update();
+                this.uiManager.showNotification(result.message);
+            } else {
+                this.uiManager.showNotification(result.message, 'error');
+            }
+        });
+
+        window.addEventListener('city-feature:enter', (e) => {
+            const { city, feature, featureInfo, visitCount } = e.detail;
+            this.uiManager.showNotification(`🏪 Welcome to ${featureInfo.name}! (Visit #${visitCount})`);
+        });
     }
 
     setupUIEventListeners() {
@@ -626,11 +769,27 @@ class CarGame {
             if (event.code === 'KeyT') {
                 this.driftManager.toggle();
             }
+            // Camera perspectives: 1st/2nd/3rd person
+            if (event.code === 'Digit1') this.setCameraMode('first');
+            if (event.code === 'Digit2') this.setCameraMode('second');
+            if (event.code === 'Digit3') this.setCameraMode('third');
         });
         
         document.addEventListener('keyup', (event) => {
             this.keys[event.code] = false;
         });
+    }
+
+    setCameraMode(mode) {
+        const target = this.controls.target.clone();
+        if (mode === 'first') {
+            this.camera.position.copy(target).add(new THREE.Vector3(0, 1.2, 0.1));
+        } else if (mode === 'second') {
+            this.camera.position.copy(target).add(new THREE.Vector3(0, 3.0, 6.0));
+        } else {
+            this.camera.position.copy(target).add(new THREE.Vector3(8.0, 6.0, 12.0));
+        }
+        this.controls.update();
     }
 
     setupNetworkEvents() {

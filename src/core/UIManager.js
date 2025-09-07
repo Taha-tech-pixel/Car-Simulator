@@ -12,6 +12,8 @@ export class UIManager {
     initializeUI() {
         this.setupEventListeners();
         this.setupResponsiveDesign();
+        this.installAnimationsCSS();
+        this.installDevConsole();
     }
 
     setupEventListeners() {
@@ -56,6 +58,12 @@ export class UIManager {
 
         const bettingBtn = document.getElementById('bettingBtn');
         if (bettingBtn) bettingBtn.addEventListener('click', () => this.togglePanel('bettingPanel'));
+
+        const tournamentsBtn = document.getElementById('tournamentsBtn');
+        if (tournamentsBtn) tournamentsBtn.addEventListener('click', () => this.togglePanel('tournamentsPanel'));
+
+        const settingsBtn = document.getElementById('settingsBtn');
+        if (settingsBtn) settingsBtn.addEventListener('click', () => this.togglePanel('settingsPanel'));
 
         // Create auction button
         document.getElementById('createAuctionBtn').addEventListener('click', () => {
@@ -129,6 +137,7 @@ export class UIManager {
 
             // Show the selected panel
             panel.classList.remove('hidden');
+            panel.style.animation = 'fadeInPanel 250ms ease-out';
             this.activePanels.add(panelId);
 
             // Load panel data
@@ -173,6 +182,12 @@ export class UIManager {
                 break;
             case 'mapPanel':
                 this.loadMap();
+                break;
+            case 'tournamentsPanel':
+                this.loadTournaments();
+                break;
+            case 'settingsPanel':
+                this.loadSettings();
                 break;
         }
     }
@@ -255,7 +270,26 @@ export class UIManager {
             <button class="menu-button" style="margin-top:10px;" onclick="window.dispatchEvent(new CustomEvent('builder:addBlock'))">Add Block</button>
             <button class="menu-button" style="margin-top:10px;" onclick="window.dispatchEvent(new CustomEvent('builder:removeBlock'))">Remove Block</button>
             <button class="menu-button" style="margin-top:10px;" onclick="window.dispatchEvent(new CustomEvent('builder:finalize'))">Finalize Car</button>
+            <div id="partsTable" style="margin-top:15px;"></div>
         `;
+
+        // Render parts table when builder finalizes
+        const handler = (e) => {
+            const parts = e.detail?.parts || [];
+            const table = document.getElementById('partsTable');
+            if (!table) return;
+            if (parts.length === 0) { table.innerHTML = '<div style="color:#aaa;">No parts</div>'; return; }
+            const rows = parts.map(p => `<tr><td style=\"padding:6px; border:1px solid #0a5;\">${p.idx}</td><td style=\"padding:6px; border:1px solid #0a5;\">${p.size}</td><td style=\"padding:6px; border:1px solid #0a5;\">[img]</td></tr>`).join('');
+            table.innerHTML = `
+                <h4 style=\"color:#00ff88; margin: 10px 0;\">Parts Table</h4>
+                <table style=\"width:100%; border-collapse: collapse;\">
+                    <thead>
+                        <tr><th style=\"text-align:left; padding:6px; border:1px solid #0a5;\">#</th><th style=\"text-align:left; padding:6px; border:1px solid #0a5;\">Size</th><th style=\"text-align:left; padding:6px; border:1px solid #0a5;\">Preview</th></tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>`;
+        };
+        window.addEventListener('builder:partsTable', handler, { once: false });
     }
 
     loadBetting() {
@@ -362,6 +396,76 @@ export class UIManager {
         content.innerHTML = html;
     }
 
+    loadTournaments() {
+        const content = document.getElementById('tournamentsContent');
+        if (!content) return;
+        content.innerHTML = `
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <button class="menu-button" onclick="window.dispatchEvent(new CustomEvent('tournament:create', { detail: { name: 'Quick Cup', maxPlayers: 8 } }))">Create Tournament</button>
+                <button class="menu-button" onclick="uiManager.fetchServers()">Server List</button>
+            </div>
+            <div id="tournamentsList">No tournaments yet</div>
+        `;
+
+        window.addEventListener('network:tournamentCreated', (e) => this.renderTournamentList([e.detail]));
+        window.addEventListener('network:tournamentUpdated', (e) => this.renderTournamentList([e.detail]));
+        window.addEventListener('network:tournamentStarted', (e) => this.renderTournamentList([e.detail]));
+        window.addEventListener('network:tournamentFinished', (e) => this.renderTournamentList([e.detail]));
+    }
+
+    renderTournamentList(list) {
+        const wrap = document.getElementById('tournamentsList');
+        if (!wrap) return;
+        const html = list.map(t => `
+            <div class="race-item">
+                <div class="race-track">${t.name} - ${t.status}</div>
+                <div class="race-participants">${t.participants?.length || 0}/${t.maxPlayers} players | Arena: ${t.arena || 'default'}</div>
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button class="menu-button" onclick="window.dispatchEvent(new CustomEvent('tournament:join', { detail: { id: '${t.id}' } }))">Join</button>
+                    <button class="menu-button" onclick="window.dispatchEvent(new CustomEvent('tournament:start', { detail: { id: '${t.id}' } }))">Start</button>
+                </div>
+            </div>
+        `).join('');
+        wrap.innerHTML = html || '<div style="color:#aaa;">No tournaments yet</div>';
+    }
+
+    loadSettings() {
+        const content = document.getElementById('settingsContent');
+        if (!content) return;
+        content.innerHTML = `
+            <div>Controls</div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-top:8px;">
+                <label>Accelerate</label><input id="keyAccelerate" placeholder="W" />
+                <label>Brake</label><input id="keyBrake" placeholder="S" />
+                <label>Left</label><input id="keyLeft" placeholder="A" />
+                <label>Right</label><input id="keyRight" placeholder="D" />
+            </div>
+            <button class="menu-button" style="margin-top:10px;" onclick="uiManager.saveControls()">Save Controls</button>
+        `;
+    }
+
+    saveControls() {
+        const map = {
+            accelerate: document.getElementById('keyAccelerate')?.value || 'W',
+            brake: document.getElementById('keyBrake')?.value || 'S',
+            left: document.getElementById('keyLeft')?.value || 'A',
+            right: document.getElementById('keyRight')?.value || 'D'
+        };
+        localStorage.setItem('controls-map', JSON.stringify(map));
+        this.showNotification('Controls saved', 'success');
+    }
+
+    async fetchServers() {
+        try {
+            const res = await fetch('/servers');
+            const data = await res.json();
+            const list = (data?.servers || []).map(s => `${s.name} - ${s.url}`).join('\n');
+            alert(list || 'No servers');
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
     loadRacePanel() {
         const content = document.getElementById('raceContent');
         if (!content) return;
@@ -431,12 +535,18 @@ export class UIManager {
                             <div>Rarity: <span style="color: ${rarityColor}">${car.rarity.toUpperCase()}</span></div>
                             <div>Purchased: ${car.purchaseDate}</div>
                         </div>
-                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
                             <button class="menu-button" style="flex: 1; padding: 8px;" onclick="uiManager.customizeCar('${car.id}')">
                                 Customize
                             </button>
                             <button class="menu-button" style="flex: 1; padding: 8px; background: linear-gradient(45deg, #ff6b6b, #ff5252);" onclick="uiManager.sellCar('${car.id}')">
                                 Sell
+                            </button>
+                            <button class="menu-button" style="flex: 1; padding: 8px; background: linear-gradient(45deg, #00c853, #00e676);" onclick="uiManager.refuelCar()">
+                                Refuel
+                            </button>
+                            <button class="menu-button" style="flex: 1; padding: 8px; background: linear-gradient(45deg, #00b0ff, #40c4ff);" onclick="uiManager.rechargeCar()">
+                                Recharge
                             </button>
                         </div>
                     </div>
@@ -523,6 +633,45 @@ export class UIManager {
         document.body.appendChild(modal);
     }
 
+    // Added helpers
+    refuelCar() {
+        if (window.game?.networkManager?.isConnected) {
+            window.game.networkManager.socket.emit('refuel', 20);
+        } else {
+            this.showNotification('Connect to server to refuel', 'error');
+        }
+    }
+
+    rechargeCar() {
+        if (window.game?.networkManager?.isConnected) {
+            window.game.networkManager.socket.emit('recharge', 20);
+        } else {
+            this.showNotification('Connect to server to recharge', 'error');
+        }
+    }
+
+    reportPlayerUI() {
+        const modal = this.createModal('Report Player', `
+            <div style="margin-bottom: 10px;">
+                <input id="reportAccused" placeholder="Accused Player ID" class="bid-input"/>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <select id="reportCategory" class="bid-input">
+                    <option value="cheating">Cheating</option>
+                    <option value="abuse">Abuse</option>
+                    <option value="spam">Spam</option>
+                </select>
+            </div>
+            <div>
+                <textarea id="reportMessage" placeholder="Describe the issue" class="bid-input"></textarea>
+            </div>
+        `, [
+            { text: 'Cancel', action: 'close' },
+            { text: 'Submit', action: 'submitReport' }
+        ]);
+        document.body.appendChild(modal);
+    }
+
     // Race actions
     joinRace(raceId) {
         console.log(`Joining race: ${raceId}`);
@@ -563,6 +712,26 @@ export class UIManager {
                 <input type="color" id="carColor" value="#ff0000" style="width: 100%; height: 40px; border: none; border-radius: 5px;">
             </div>
             <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #00ff88;">Skin:</label>
+                <select id="carSkin" style="width: 100%; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid #00ff88; border-radius: 5px; color: white;">
+                    <option value="default">Factory</option>
+                    <option value="stealth">Stealth Matte</option>
+                    <option value="neon">Neon Pulse</option>
+                    <option value="gold">Gold Chrome</option>
+                    <option value="crimson">Crimson</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; color: #00ff88;">Element:</label>
+                <select id="carElement" style="width: 100%; padding: 8px; background: rgba(255,255,255,0.1); border: 1px solid #00ff88; border-radius: 5px; color: white;">
+                    <option value="">None</option>
+                    <option value="fire">Fire</option>
+                    <option value="water">Water</option>
+                    <option value="earth">Earth</option>
+                    <option value="air">Air</option>
+                </select>
+            </div>
+            <div style="margin-bottom: 15px;">
                 <label style="display: block; margin-bottom: 5px; color: #00ff88;">Upgrades:</label>
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <label style="display: flex; align-items: center; gap: 10px;">
@@ -576,6 +745,19 @@ export class UIManager {
                     <label style="display: flex; align-items: center; gap: 10px;">
                         <input type="checkbox" id="aerodynamicsUpgrade">
                         <span>Aerodynamics Upgrade (+5% top speed, +10% handling)</span>
+                    </label>
+                    <div style="height:1px; background: rgba(255,255,255,0.1);"></div>
+                    <label style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="attachSpikes">
+                        <span>Add Spikes</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="attachGuns">
+                        <span>Add Guns</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px;">
+                        <input type="checkbox" id="attachBombs">
+                        <span>Add Bomb</span>
                     </label>
                 </div>
             </div>
@@ -645,6 +827,9 @@ export class UIManager {
             case 'customizeCar':
                 this.applyCustomization(modal);
                 break;
+            case 'submitReport':
+                this.submitReport(modal);
+                break;
         }
     }
 
@@ -682,12 +867,20 @@ export class UIManager {
 
     applyCustomization(modal) {
         const color = modal.querySelector('#carColor').value;
+        const skinId = modal.querySelector('#carSkin')?.value;
+        const element = modal.querySelector('#carElement')?.value || '';
         const engineUpgrade = modal.querySelector('#engineUpgrade').checked;
         const suspensionUpgrade = modal.querySelector('#suspensionUpgrade').checked;
         const aerodynamicsUpgrade = modal.querySelector('#aerodynamicsUpgrade').checked;
+        const spikes = modal.querySelector('#attachSpikes').checked;
+        const guns = modal.querySelector('#attachGuns').checked;
+        const bombs = modal.querySelector('#attachBombs').checked;
 
         const customization = {
             color: parseInt(color.replace('#', ''), 16),
+            skinId,
+            element: element || undefined,
+            attachments: { spikes, guns, bombs },
             engineUpgrade,
             suspensionUpgrade,
             aerodynamicsUpgrade
@@ -696,6 +889,19 @@ export class UIManager {
         console.log('Applying customization:', customization);
         window.dispatchEvent(new CustomEvent('customizeCar', { detail: customization }));
         document.body.removeChild(modal);
+    }
+
+    submitReport(modal) {
+        const accusedId = modal.querySelector('#reportAccused').value;
+        const category = modal.querySelector('#reportCategory').value;
+        const message = modal.querySelector('#reportMessage').value;
+        if (!accusedId) { alert('Enter accused ID'); return; }
+        if (window.game?.networkManager?.isConnected) {
+            window.game.networkManager.reportPlayer(accusedId, category, message);
+            document.body.removeChild(modal);
+        } else {
+            this.showNotification('Connect to server to report', 'error');
+        }
     }
 
     // Update player info
@@ -730,15 +936,96 @@ export class UIManager {
             z-index: 10000;
             max-width: 300px;
             word-wrap: break-word;
+            animation: popIn 200ms ease-out;
         `;
         notification.textContent = message;
         document.body.appendChild(notification);
 
         setTimeout(() => {
             if (document.body.contains(notification)) {
-                document.body.removeChild(notification);
+                notification.style.animation = 'fadeOut 250ms ease-in';
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 230);
             }
         }, 5000);
+    }
+
+    installAnimationsCSS() {
+        if (document.getElementById('ui-anim-styles')) return;
+        const style = document.createElement('style');
+        style.id = 'ui-anim-styles';
+        style.textContent = `
+            @keyframes fadeInPanel { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+            @keyframes popIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+            @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+            .menu-button { transition: transform 120ms ease, filter 120ms ease; }
+            .menu-button:hover { transform: translateY(-1px); filter: brightness(1.08); }
+            .menu-button:active { transform: translateY(0); filter: brightness(0.95); }
+        `;
+        document.head.appendChild(style);
+    }
+
+    installDevConsole() {
+        // Hidden console (Ctrl+Alt+D)
+        const panel = document.createElement('div');
+        panel.id = 'devConsole';
+        panel.style.cssText = `
+            position: fixed; bottom: 10px; left: 10px; width: 360px; max-height: 40vh; overflow:auto;
+            background: rgba(0,0,0,0.85); border: 1px solid #0f8; border-radius: 6px; padding: 10px; display:none; z-index:10001;
+        `;
+        panel.innerHTML = `
+            <div style="color:#0f8; margin-bottom:6px;">Developer Console</div>
+            <input id="devSecret" type="password" placeholder="Secret" style="width:100%; margin-bottom:6px;"/>
+            <div style="display:flex; gap:6px;">
+                <select id="devCmd" style="flex:1;">
+                    <option value="giveMoney">giveMoney</option>
+                    <option value="spawnCar">spawnCar</option>
+                    <option value="ban">ban</option>
+                    <option value="freeze">freeze</option>
+                    <option value="unfreeze">unfreeze</option>
+                </select>
+                <input id="devTarget" placeholder="target socket id" style="flex:1;"/>
+                <input id="devArg1" placeholder="arg1" style="flex:1;"/>
+            </div>
+            <button class="menu-button" id="devSend" style="margin-top:6px; width:100%;">Execute</button>
+            <div id="devLog" style="margin-top:8px; font-size:12px; color:#ddd;"></div>
+        `;
+        document.body.appendChild(panel);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.altKey && e.code === 'KeyD') {
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+
+        const logDiv = panel.querySelector('#devLog');
+        const btn = panel.querySelector('#devSend');
+        btn.addEventListener('click', () => {
+            const secret = panel.querySelector('#devSecret').value;
+            const cmd = panel.querySelector('#devCmd').value;
+            const targetId = panel.querySelector('#devTarget').value;
+            const arg1 = panel.querySelector('#devArg1').value;
+            const args = (cmd === 'giveMoney') ? { targetId, amount: Number(arg1)||0 } :
+                         (cmd === 'spawnCar') ? { targetId, carId: arg1 } :
+                         { targetId };
+            if (!window.game?.networkManager?.isConnected) {
+                this.showNotification('Not connected', 'error');
+                return;
+            }
+            window.game.networkManager.socket.emit('admin:exec', { secret, cmd, args });
+        });
+
+        window.addEventListener('network:adminLog', (e) => {
+            const { level, message } = e.detail || {};
+            const row = document.createElement('div');
+            row.textContent = `[${level}] ${message}`;
+            row.style.color = level === 'error' ? '#f66' : '#9f9';
+            logDiv.appendChild(row);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        });
     }
 }
 

@@ -51,6 +51,9 @@ export class CarBuilderManager {
             const clone = b.clone();
             carGroup.add(clone);
         });
+        // Emit parts table for UI
+        const parts = this.blocks.map((b, i) => ({ idx: i + 1, size: `${b.geometry.parameters.width?.toFixed?.(1) || 1}x${b.geometry.parameters.height?.toFixed?.(1) || 1}x${b.geometry.parameters.depth?.toFixed?.(1) || 1}` }));
+        window.dispatchEvent(new CustomEvent('builder:partsTable', { detail: { parts } }));
         carGroup.userData = {
             carData: {
                 id,

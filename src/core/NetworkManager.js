@@ -177,6 +177,31 @@ export class NetworkManager {
             }
         });
 
+        // Tournaments
+        this.socket.on('tournament:created', (t) => {
+            this.emit('tournamentCreated', t);
+            window.uiManager.showNotification(`Tournament created: ${t.name}`, 'info');
+        });
+        this.socket.on('tournament:updated', (t) => this.emit('tournamentUpdated', t));
+        this.socket.on('tournament:started', (t) => {
+            this.emit('tournamentStarted', t);
+            window.uiManager.showNotification('Tournament started', 'info');
+        });
+        this.socket.on('tournament:finished', (t) => {
+            this.emit('tournamentFinished', t);
+            window.uiManager.showNotification('Tournament finished!', 'success');
+        });
+
+        // Reports
+        this.socket.on('report:ack', (res) => {
+            if (res?.success) window.uiManager.showNotification('Report sent. Thank you.', 'info');
+        });
+
+        // Admin dev console logs
+        this.socket.on('admin:log', (entry) => {
+            this.emit('adminLog', entry);
+        });
+
         // Player events
         this.socket.on('player-joined', (player) => {
             console.log('Player joined:', player);
@@ -271,6 +296,30 @@ export class NetworkManager {
         }
         
         this.socket.emit('customize-car', customizationData);
+    }
+
+    // Tournaments
+    createTournament(config) {
+        if (!this.isConnected) return;
+        this.socket.emit('tournament:create', config);
+    }
+    joinTournament(tournamentId) {
+        if (!this.isConnected) return;
+        this.socket.emit('tournament:join', tournamentId);
+    }
+    startTournament(tournamentId) {
+        if (!this.isConnected) return;
+        this.socket.emit('tournament:start', tournamentId);
+    }
+    reportTournamentResult(tournamentId, winnerId) {
+        if (!this.isConnected) return;
+        this.socket.emit('tournament:reportResult', { tournamentId, winnerId });
+    }
+
+    // Reports
+    reportPlayer(accusedId, category, message) {
+        if (!this.isConnected) return;
+        this.socket.emit('report:player', { accusedId, category, message });
     }
 
     // Connection management
